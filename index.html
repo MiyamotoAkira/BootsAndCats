@@ -6,20 +6,23 @@
   </head>
   <body>
 	<h1>Boots and Cats</h1> 
-	<div>
+	<div>atu
 	  <canvas id="canvas" width="512" height="384" style="position:absolute;"></canvas>
-	  <img id="image" src="#" style="position:absolute;">
+	  <img id="cat" src="#" style="position:absolute;">
+	  <img id="boot" src="#" style="position:absolute;">
+	</div>
 
-  <script src="node_modules/core-js/client/core.min.js"></script>
-  <script src="node_modules/requirejs/require.js"></script>
-  <script>
-	requirejs.config({
-	baseUrl: 'out',
-	paths: {
-	'fable-core': '../node_modules/fable-core/fable-core.min'
-	}
-	});
-	requirejs(["bootsandcats"]);
+	
+	<script src="node_modules/core-js/client/core.min.js"></script>
+	<script src="node_modules/requirejs/require.js"></script>
+	<script>
+	  requirejs.config({
+	      baseUrl: 'out',
+	      paths: {
+	          'fable-core': '../node_modules/fable-core/fable-core.min'
+	      }
+	  });
+	  requirejs(["bootsandcats"]);
 	</script>
   </body>
 </html>

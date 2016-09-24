@@ -44,8 +44,8 @@ module Win =
     let dimensions () =
         canvas.width, canvas.height
 
-    let image (src:string) =
-        let image = document.getElementsByTagName_img().[0]
+    let image elementId (src:string) =
+        let image = document.getElementById elementId :?> HTMLImageElement
         if image.src.IndexOf(src) = -1 then image.src <- src
         image
    
@@ -56,10 +56,12 @@ let calculatevy force angle  = force *  (sin angle)
 let g = 9.8
 
 type Wellie =
-    { x: float;
-      y: float;
-      vx: float;
-      vy: float;
+    {
+      x: float
+      y: float
+      vx: float
+      vy: float
+      img: string
     }
 
 let calculateWelliePosition wellie (originalForce: float)  (originalAngle :float) (time:float) =
@@ -67,9 +69,9 @@ let calculateWelliePosition wellie (originalForce: float)  (originalAngle :float
     then
         { wellie with vy = 0.; vx = 0. }
     else
-        {
-            x = originalForce * time * (cos originalAngle);
-            y = originalForce * time * (sin originalAngle) - (1./2.) * g * (time**2.);
+        { wellie with
+            x = originalForce * time * (cos originalAngle)
+            y = originalForce * time * (sin originalAngle) - (1./2.) * g * (time**2.)
             vx = originalForce * time * (cos originalAngle)
             vy = originalForce  * (sin originalAngle) - g * time
         }
@@ -98,22 +100,34 @@ let calculateCatPosition cat wellie =
 let calculateNewGameState wellie numberOfWellies originalForce originalAngle time (cat:Cat) =
     if numberOfWellies = 0 then Finished
     else if cat.x > 100. then Finished
-    else InProgress (cat, wellie, numberOfWellies, originalForce, originalAngle, time)
+    else InProgress (cat, wellie, numberOfWellies - 1, originalForce, originalAngle, time)
     
+
+let render (w,h) cat (wellie:Wellie) =
+    (0.,0.,w,h) |> Win.filled (Win.rgb 174 238 238)
+    (0., h-50., w, 50.) |> Win.filled (Win.rgb 74 163 41)
+
+    cat.img |> Win.image "cat" |> Win.position (w/2. - 16. + cat.x, h-50.-16.)
+    wellie.img |> Win.image "boot" |> Win.position (w/2. - 16. + wellie.x, h-50.-16. + wellie.y)
+    
+
+let w, h = Win.dimensions()
 
 let rec gameloop gamestate =
     match gamestate with
         | Finished -> gamestate
         | Initial ->
-            let  cat = { x= 50.; img = ""}
+            let  cat = { x= 50.; img = "cat.png"}
             let angle = 45.
             let force = 50.
             let vx' = 0.;
             let vy' = 0.;
-            gameloop (InProgress (cat, {x = 0.; y = 0.; vx = vx'; vy = vy'}, 5, force, angle, 0.))
+            gameloop (InProgress (cat, {x = 0.; y = 0.; vx = vx'; vy = vy'; img="boot.png"}, 5, force, angle, 0.))
         | InProgress (cat, wellie, numberOfWellies, originalForce, originalAngle, time) ->
-            let wellie' =calculateWelliePosition wellie  originalForce  originalAngle  time
-            let gamestate' =
-                calculateCatPosition cat wellie'
-                |> calculateNewGameState wellie' numberOfWellies originalForce originalAngle time
+            let wellie' = calculateWelliePosition wellie  originalForce  originalAngle  time
+            let cat'=  calculateCatPosition cat wellie'
+            let gamestate' = calculateNewGameState wellie' numberOfWellies originalForce originalAngle time cat'
+            render (w,h) cat' wellie'
             gameloop gamestate'
+
+gameloop Initial
