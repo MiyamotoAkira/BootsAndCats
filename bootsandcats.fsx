@@ -1,9 +1,3 @@
-
-
-
-
-
-
 #r "node_modules/fable-core/Fable.Core.dll"
 open Fable.Core
 open Fable.Import.Browser
@@ -33,7 +27,31 @@ module Keyboard =
         document.addEventListener_keydown(fun e -> update (e, true))
         document.addEventListener_keyup(fun e-> update(e, false))
 
+module Win =
+    let canvas = document.getElementsByTagName_canvas().[0]
+    let context = canvas.getContext_2d()
 
+    let ($) s n = s + n.ToString()
+    let rgb  r g b = "rgb(" $ r $ "," $ g $ "," $ b $ ")"
+
+    let filled color rect =
+        let ctx = context
+        ctx.fillStyle <- U3.Case1 color
+        ctx.fillRect rect
+
+    let position (x,y) (img: HTMLImageElement) =
+        img.style.left <- x.ToString() + "px"
+        img.style.top <- (canvas.offsetTop + y).ToString() + "px"
+
+    let dimensions () =
+        canvas.width, canvas.height
+
+    let image (src:string) =
+        let image = document.getElementsByTagName_img().[0]
+        if image.src.IndexOf(src) = -1 then image.src <- src
+        image
+   
+    
 let calculatevx force angle  = force *  (cos angle)
 let calculatevy force angle  = force *  (sin angle)
 
@@ -53,7 +71,7 @@ let calculateWelliePosition wellie (originalForce: float)  (originalAngle :float
     else
         {
             x = originalForce * time * (cos originalAngle);
-            y = originalForce * time * (sin originalAngle) - (1./2.) * g * (time**2);
+            y = originalForce * time * (sin originalAngle) - (1./2.) * g * (time**2.);
             vx = originalForce * time * (cos originalAngle)
             vy = originalForce  * (sin originalAngle) - g * time
         }
@@ -89,7 +107,7 @@ let rec gameloop gamestate =
     match gamestate with
         | Finished -> gamestate
         | Initial ->
-            let cat = { x= 50.; img = ""}
+            let  cat = { x= 50.; img = ""}
             let angle = 45.
             let force = 50.
             let vx' = 0.;
