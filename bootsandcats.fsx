@@ -2,8 +2,6 @@
 open Fable.Core
 open Fable.Import.Browser
 
-
-
 // First a moving angle
 // Then a power
 // calculate where boot will fall
