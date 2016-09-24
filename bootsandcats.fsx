@@ -1,4 +1,5 @@
 #r "node_modules/fable-core/Fable.Core.dll"
+open System
 open Fable.Core
 open Fable.Import.Browser
 
@@ -50,30 +51,33 @@ module Win =
         image
    
     
-let calculatevx force angle  = force *  (cos angle)
-let calculatevy force angle  = force *  (sin angle)
-
 let g = 9.8
 
-type Wellie =
+let calculatevy force angle  =
+    let angle' = angle * (Math.PI/180.)
+    (force *  (sin angle'))
+
+type Boot =
     {
       x: float
       y: float
-      vx: float
       vy: float
       img: string
     }
 
-let calculateWelliePosition wellie (originalForce: float)  (originalAngle :float) (time:float) =
-    if wellie.y = 0. && wellie.vy <= 0.
+let bootIsInGround boot =
+    boot.y >= 0. && boot.vy <= 0.
+
+let calculateBootPosition boot (originalForce: float)  (originalAngle :float) (time:float) =
+    if bootIsInGround boot
     then
-        { wellie with vy = 0.; vx = 0. }
+        { boot with y = 0.}
     else
-        { wellie with
-            x = originalForce * time * (cos originalAngle)
-            y = originalForce * time * (sin originalAngle) - (1./2.) * g * (time**2.)
-            vx = originalForce * time * (cos originalAngle)
-            vy = originalForce  * (sin originalAngle) - g * time
+        let angle = originalAngle * (Math.PI/180.)
+        { boot with
+            x = originalForce * (time/1000.) * (cos angle)
+            y = -1. * (originalForce * (time/1000.) * (sin angle) - (1./2.) * g * ((time/1000.)**2.))
+            vy = (originalForce * (sin angle) - g * (time/1000.))
         }
 
 type Cat =
@@ -82,33 +86,39 @@ type Cat =
 
 type Gamestate =
     | Initial
-    | InProgress of (Cat * Wellie * int * float * float * float)
+    | InProgress of (Cat * Boot * int * float * float * float)
     | Finished
 
-let moveCat cat wellie =
-    cat
+let moveCat (cat : Cat) (boot: Boot) =
+    if boot.x < cat.x then
+        { cat with x = cat.x + 60. }
+    else
+        { cat with x = cat.x - 100. }
 
-let calculateCatPosition cat wellie =
-    if wellie.y = 0. && wellie.vy = 0. then
-        if abs (cat.x - wellie.x) < 0. then
-          moveCat cat wellie
+let calculateCatPosition cat boot time =
+    if bootIsInGround boot then
+        if abs (cat.x - boot.x) < 10. then
+          moveCat cat boot
         else
           cat
     else
         cat
 
-let calculateNewGameState wellie numberOfWellies originalForce originalAngle time (cat:Cat) =
-    if numberOfWellies = 0 then Finished
-    else if cat.x > 100. then Finished
-    else InProgress (cat, wellie, numberOfWellies - 1, originalForce, originalAngle, time)
+let calculateNewGameState boot numberOfBoots originalForce originalAngle time (cat:Cat) =
+    if numberOfBoots = 0 then Finished
+    else if cat.x > 400. then Finished
+    else if bootIsInGround boot then
+        InProgress (cat, boot, numberOfBoots - 1, originalForce, originalAngle, time)
+        else
+            InProgress (cat, boot, numberOfBoots, originalForce, originalAngle, time)
     
 
-let render (w,h) cat (wellie:Wellie) =
+let render (w,h) cat (boot:Boot) =
     (0.,0.,w,h) |> Win.filled (Win.rgb 174 238 238)
     (0., h-50., w, 50.) |> Win.filled (Win.rgb 74 163 41)
 
-    cat.img |> Win.image "cat" |> Win.position (w/2. - 16. + cat.x, h-50.-16.)
-    wellie.img |> Win.image "boot" |> Win.position (w/2. - 16. + wellie.x, h-50.-16. + wellie.y)
+    cat.img |> Win.image "cat" |> Win.position (cat.x, h-50.-16.)
+    boot.img |> Win.image "boot" |> Win.position (boot.x, h-50.-16. + boot.y)
     
 
 let w, h = Win.dimensions()
@@ -117,21 +127,19 @@ let rec gameloop gamestate () =
     match gamestate with
         | Finished -> gamestate
         | Initial ->
-            let  cat = { x= 50.; img = "cat.png"}
+            let  cat = { x= 260.; img = "cat.png"}
             let angle = 45.
-            let force = 50.
-            let vx' = 0.;
-            let vy' = 0.;
-            let wellie = {x = 0.; y = 0.; vx = vx'; vy = vy'; img="boot.png"}
-            render (w,h) cat wellie
-            window.setTimeout(gameloop (InProgress (cat, wellie, 5, force, angle, 0.)), 1000. / 60.) |> ignore
+            let force = 50.5
+            let boot = {x = 0.;  y = 0.; vy = calculatevy force angle; img="boot.png"}
+            render (w,h) cat boot
+            window.setTimeout(gameloop (InProgress (cat, boot, 5, force, angle, 0.)), 1000. / 6.) |> ignore
             gamestate
-        | InProgress (cat, wellie, numberOfWellies, originalForce, originalAngle, time) ->
-            let wellie' = calculateWelliePosition wellie  originalForce  originalAngle  time
-            let cat'=  calculateCatPosition cat wellie'
-            let gamestate' = calculateNewGameState wellie' numberOfWellies originalForce originalAngle time cat'
-            render (w,h) cat' wellie'
-            window.setTimeout(gameloop gamestate', 1000. / 60.) |> ignore
+        | InProgress (cat, boot, numberOfBoots, originalForce, originalAngle, time) ->
+            let boot' = calculateBootPosition boot  originalForce  originalAngle  time
+            let cat'=  calculateCatPosition cat boot' time
+            let gamestate' = calculateNewGameState boot' numberOfBoots originalForce originalAngle (time + 1000./6.)  cat'
+            render (w,h) cat' boot'
+            window.setTimeout(gameloop gamestate', 1000. / 6.) |> ignore
             gamestate'
 
-gameloop Initial
+gameloop Initial ()
