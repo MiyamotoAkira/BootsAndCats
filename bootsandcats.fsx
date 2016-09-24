@@ -3,13 +3,8 @@ open System
 open Fable.Core
 open Fable.Import.Browser
 
-// First a moving angle
-// Then a power
-// calculate where boot will fall
-// far from cat nothing happens
-// near cat, cat moves a fixed amount opposite direction
-// need to get cat out of the garden
-
+// angle has to change based on input (angle)
+// force has to change based on input (vertical slide)
 
 module Keyboard =
     let mutable keysPressed = Set.empty
@@ -86,6 +81,7 @@ type Cat =
 
 type Gamestate =
     | Initial
+    | NewBoot of Cat
     | InProgress of (Cat * Boot * int * float * float * float)
     | Finished
 
@@ -123,16 +119,53 @@ let render (w,h) cat (boot:Boot) =
 
 let w, h = Win.dimensions()
 
+type Entry =
+    {
+        angle : float
+        force : float
+        dirty : bool
+    }
+
+let mutable entry = {angle =  0.; force =  0.; dirty = false}
+
+// document.getElementById "throwvalues" ? onsubmit (fun event ->
+//                                                   event?preventDefault()
+//                                                   let angleValue = document.getElementById "angle" ? value
+//                                                   let forceValue = document.getElementById "force" ? value
+//                                                   let angle = float angleValue
+//                                                   let force = float forceValue
+
+//                                                   entry <- {
+//                                                        angle = angle
+//                                                        force = force
+//                                                        dirty = true
+//                                                   })
+                                                            
+
 let rec gameloop gamestate () =
     match gamestate with
         | Finished -> gamestate
-        | Initial ->
-            let  cat = { x= 260.; img = "cat.png"}
+        | NewBoot cat ->
             let angle = 45.
             let force = 50.5
             let boot = {x = 0.;  y = 0.; vy = calculatevy force angle; img="boot.png"}
+
+            if entry.dirty then
+                render (w,h) cat boot            
+                window.setTimeout(gameloop (InProgress (cat, boot, 5, entry.force, entry.angle, 0.)), 1000. / 6.) |> ignore
+                entry <- { angle = angle; force = force; dirty = false}
+            else
+                window.setTimeout(gameloop (NewBoot cat), 1000. / 6.) |> ignore
+            gamestate
+        | Initial ->
+            let cat = { x= 260.; img = "cat.png"}
+            let angle = 45.
+            let force = 50.5
+            let boot = {x = 0.;  y = 0.; vy = calculatevy force angle; img="boot.png"}
+            //let boot = {x = 0.;  y = 0.; vy = 0.; img="boot.png"}
             render (w,h) cat boot
             window.setTimeout(gameloop (InProgress (cat, boot, 5, force, angle, 0.)), 1000. / 6.) |> ignore
+            //window.setTimeout(gameloop (NewBoot cat), 1000. / 6.) |> ignore
             gamestate
         | InProgress (cat, boot, numberOfBoots, originalForce, originalAngle, time) ->
             let boot' = calculateBootPosition boot  originalForce  originalAngle  time
