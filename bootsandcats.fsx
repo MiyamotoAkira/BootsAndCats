@@ -113,7 +113,7 @@ let render (w,h) cat (wellie:Wellie) =
 
 let w, h = Win.dimensions()
 
-let rec gameloop gamestate =
+let rec gameloop gamestate () =
     match gamestate with
         | Finished -> gamestate
         | Initial ->
@@ -122,12 +122,16 @@ let rec gameloop gamestate =
             let force = 50.
             let vx' = 0.;
             let vy' = 0.;
-            gameloop (InProgress (cat, {x = 0.; y = 0.; vx = vx'; vy = vy'; img="boot.png"}, 5, force, angle, 0.))
+            let wellie = {x = 0.; y = 0.; vx = vx'; vy = vy'; img="boot.png"}
+            render (w,h) cat wellie
+            window.setTimeout(gameloop (InProgress (cat, wellie, 5, force, angle, 0.)), 1000. / 60.) |> ignore
+            gamestate
         | InProgress (cat, wellie, numberOfWellies, originalForce, originalAngle, time) ->
             let wellie' = calculateWelliePosition wellie  originalForce  originalAngle  time
             let cat'=  calculateCatPosition cat wellie'
             let gamestate' = calculateNewGameState wellie' numberOfWellies originalForce originalAngle time cat'
             render (w,h) cat' wellie'
-            gameloop gamestate'
+            window.setTimeout(gameloop gamestate', 1000. / 60.) |> ignore
+            gamestate'
 
 gameloop Initial
