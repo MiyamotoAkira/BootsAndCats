@@ -128,19 +128,25 @@ type Entry =
 
 let mutable entry = {angle =  0.; force =  0.; dirty = false}
 
-// document.getElementById "throwvalues" ? onsubmit (fun event ->
-//                                                   event?preventDefault()
-//                                                   let angleValue = document.getElementById "angle" ? value
-//                                                   let forceValue = document.getElementById "force" ? value
-//                                                   let angle = float angleValue
-//                                                   let force = float forceValue
 
-//                                                   entry <- {
-//                                                        angle = angle
-//                                                        force = force
-//                                                        dirty = true
-//                                                   })
-                                                            
+let form = document.getElementById("throwvalues") :?> HTMLFormElement
+form.onclick <- fun (e:MouseEvent)->
+                      e.preventDefault()
+                      let angleValue = (document.getElementById "angle")
+                      let forceValue = (document.getElementById "force")
+                      let angleInput = angleValue :?> HTMLInputElement
+                      let forceInput = forceValue :?> HTMLInputElement
+                      let angle = float angleInput.value
+                      let force = float forceInput.value
+
+                      entry <- {
+                          angle = angle
+                          force = force
+                          dirty = true
+                      }
+
+                      new Object()
+
 
 let rec gameloop gamestate () =
     match gamestate with
@@ -162,10 +168,10 @@ let rec gameloop gamestate () =
             let angle = 45.
             let force = 50.5
             let boot = {x = 0.;  y = 0.; vy = calculatevy force angle; img="boot.png"}
-            //let boot = {x = 0.;  y = 0.; vy = 0.; img="boot.png"}
+            let boot = {x = 0.;  y = 0.; vy = 0.; img="boot.png"}
             render (w,h) cat boot
-            window.setTimeout(gameloop (InProgress (cat, boot, 5, force, angle, 0.)), 1000. / 6.) |> ignore
-            //window.setTimeout(gameloop (NewBoot cat), 1000. / 6.) |> ignore
+            //window.setTimeout(gameloop (InProgress (cat, boot, 5, force, angle, 0.)), 1000. / 6.) |> ignore
+            window.setTimeout(gameloop (NewBoot cat), 1000. / 6.) |> ignore
             gamestate
         | InProgress (cat, boot, numberOfBoots, originalForce, originalAngle, time) ->
             let boot' = calculateBootPosition boot  originalForce  originalAngle  time
