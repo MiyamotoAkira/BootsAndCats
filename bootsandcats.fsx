@@ -129,7 +129,7 @@ type Entry =
 let mutable entry = {angle =  0.; force =  0.; dirty = false}
 
 
-let form = document.getElementById("throwvalues") :?> HTMLFormElement
+let form = document.getElementById("throw") :?> HTMLButtonElement
 form.onclick <- fun (e:MouseEvent)->
                       e.preventDefault()
                       let angleValue = (document.getElementById "angle")
