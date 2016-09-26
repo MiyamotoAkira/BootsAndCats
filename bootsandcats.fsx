@@ -81,7 +81,7 @@ type Cat =
 
 type Gamestate =
     | Initial
-    | NewBoot of Cat
+    | NewBoot of (Cat * int)
     | InProgress of (Cat * Boot * int * float * float * float)
     | Finished
 
@@ -104,9 +104,9 @@ let calculateNewGameState boot numberOfBoots originalForce originalAngle time (c
     if numberOfBoots = 0 then Finished
     else if cat.x > 400. then Finished
     else if bootIsInGround boot then
-        InProgress (cat, boot, numberOfBoots - 1, originalForce, originalAngle, time)
-        else
-            InProgress (cat, boot, numberOfBoots, originalForce, originalAngle, time)
+        NewBoot (cat, numberOfBoots - 1)
+    else
+        InProgress (cat, boot, numberOfBoots, originalForce, originalAngle, time)
     
 
 let render (w,h) cat (boot:Boot) =
@@ -151,17 +151,17 @@ form.onclick <- fun (e:MouseEvent)->
 let rec gameloop gamestate () =
     match gamestate with
         | Finished -> gamestate
-        | NewBoot cat ->
+        | NewBoot (cat, numberOfBoots) ->
             let angle = 45.
             let force = 50.5
             let boot = {x = 0.;  y = 0.; vy = calculatevy force angle; img="boot.png"}
 
             if entry.dirty then
                 render (w,h) cat boot            
-                window.setTimeout(gameloop (InProgress (cat, boot, 5, entry.force, entry.angle, 0.)), 1000. / 6.) |> ignore
+                window.setTimeout(gameloop (InProgress (cat, boot, numberOfBoots, entry.force, entry.angle, 0.)), 1000. / 6.) |> ignore
                 entry <- { angle = angle; force = force; dirty = false}
             else
-                window.setTimeout(gameloop (NewBoot cat), 1000. / 6.) |> ignore
+                window.setTimeout(gameloop (NewBoot (cat, numberOfBoots)), 1000. / 6.) |> ignore
             gamestate
         | Initial ->
             let cat = { x= 260.; img = "cat.png"}
@@ -170,8 +170,7 @@ let rec gameloop gamestate () =
             let boot = {x = 0.;  y = 0.; vy = calculatevy force angle; img="boot.png"}
             let boot = {x = 0.;  y = 0.; vy = 0.; img="boot.png"}
             render (w,h) cat boot
-            //window.setTimeout(gameloop (InProgress (cat, boot, 5, force, angle, 0.)), 1000. / 6.) |> ignore
-            window.setTimeout(gameloop (NewBoot cat), 1000. / 6.) |> ignore
+            window.setTimeout(gameloop (NewBoot (cat, 5)), 1000. / 6.) |> ignore
             gamestate
         | InProgress (cat, boot, numberOfBoots, originalForce, originalAngle, time) ->
             let boot' = calculateBootPosition boot  originalForce  originalAngle  time
